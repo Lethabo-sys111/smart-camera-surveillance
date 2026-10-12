@@ -1,0 +1,20 @@
+# Starts the camera automatically when the Pi boots.
+# Install:
+#   sudo cp surveillance-camera.service /etc/systemd/system/
+#   sudo systemctl enable --now surveillance-camera
+# Logs:
+#   journalctl -u surveillance-camera -f
+[Unit]
+Description=Smart Camera Surveillance (Pi camera service)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/smart-camera-surveillance/pi
+ExecStart=/usr/bin/python3 /home/pi/smart-camera-surveillance/pi/camera_service.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

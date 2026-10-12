@@ -1,0 +1,15 @@
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Backend (Laravel adds its own backend/.gitignore after setup)
+backend/vendor/
+backend/.env
+.laravel-tmp/
+
+# Pi
+pi/config.ini
+__pycache__/
+
+.DS_Store
