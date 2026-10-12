@@ -1,0 +1,8 @@
+{
+  "name": "Smart Camera Surveillance",
+  "short_name": "Camera",
+  "start_url": "/",
+  "display": "fullscreen",
+  "background_color": "#0e1116",
+  "theme_color": "#0e1116"
+}

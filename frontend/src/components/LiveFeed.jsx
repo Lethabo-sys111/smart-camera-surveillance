@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import FullscreenButton from './FullscreenButton'
 
 export default function LiveFeed({ camera, onClose }) {
   const [state, setState] = useState('loading') // loading | playing | error
@@ -29,7 +30,10 @@ export default function LiveFeed({ camera, onClose }) {
             <strong>Live feed</strong>
             <span className="mono muted"> · {camera?.ip}</span>
           </div>
-          <button className="btn btn-sm btn-ghost" onClick={onClose} aria-label="Close">✕</button>
+          <div className="viewer-actions">
+            <FullscreenButton className="btn btn-sm btn-ghost" />
+            <button className="btn btn-sm btn-ghost" onClick={onClose} aria-label="Close">✕</button>
+          </div>
         </div>
 
         <div className="viewer-stage">

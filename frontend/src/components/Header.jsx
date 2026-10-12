@@ -1,4 +1,5 @@
 import { formatAgo } from '../format'
+import FullscreenButton from './FullscreenButton'
 
 export default function Header({ camera, error, busy, onToggleArmed, onTakePhoto, onOpenLive }) {
   const online = camera?.online
@@ -37,11 +38,12 @@ export default function Header({ camera, error, busy, onToggleArmed, onTakePhoto
           {armed ? 'Armed' : 'Disarmed'}
         </button>
         <button className="btn" onClick={onTakePhoto} disabled={!online || busy.capture} title={online ? '' : 'Camera is offline'}>
-          Take photo
+          <span className="hide-sm">Take photo</span><span className="show-sm">Photo</span>
         </button>
         <button className="btn btn-primary" onClick={onOpenLive} disabled={!camera?.stream_url}>
-          <span className="live-dot" aria-hidden="true" /> View live feed
+          <span className="live-dot" aria-hidden="true" /> <span className="hide-sm">View live feed</span><span className="show-sm">Live</span>
         </button>
+        <FullscreenButton className="btn btn-icon" />
       </div>
     </header>
   )
