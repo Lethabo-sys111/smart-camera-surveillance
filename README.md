@@ -1,42 +1,21 @@
-# Smart Camera Surveillance System
+Smart Camera Surveillance System
 
-TUT Digital Electronics 126 (LOD216D) — Project 4.
+TUT Logic Design 126 (LOD216D) — Project 4.
 
-A Raspberry Pi 3 B+ with a night-vision camera watches for motion. When it's **armed** and something moves, it takes a burst of photos and sends them to a web app. There you can browse the gallery, watch the live feed, arm/disarm the camera and take a photo on demand.
-
-```
-┌──────────────────────┐   photos + heartbeat (HTTP)   ┌──────────────────┐   JSON API   ┌─────────────────┐
-│ Raspberry Pi 3 B+    │ ────────────────────────────▶ │ Laravel API      │ ◀──────────▶ │ React web app   │
-│ camera + IR LEDs     │ ◀──── armed / take photo ──── │ (backend/)       │              │ (frontend/)     │
-│ (pi/camera_service)  │                               └──────────────────┘              └────────┬────────┘
-│ live MJPEG :8000 ────┼──────────────────────── live feed (browser loads it directly) ───────────┘
-└──────────────────────┘
-```
-
-| Folder | What it is |
-|---|---|
-| `pi/` | Python service on the Pi: live stream, motion detection, burst capture, upload with retry |
-| `backend/` | Laravel 12 API: stores photos, tracks camera status and armed state |
-| `frontend/` | React (Vite) web app: gallery, live feed, arm toggle, take photo |
-| `tools/` | `test-upload.sh` to fake the Pi while testing |
+A Raspberry Pi 3 B+ with a night-vision camera watches for motion. When it's armed and something moves, it takes a burst of photos and sends them to a web app. There you can browse the gallery, watch the live feed, arm/disarm the camera and take a photo on demand.
 
 ## Hardware
 
 - Raspberry Pi 3 Model B+ (5V 2.5A micro-USB supply)
-- Night-vision camera module (ribbon cable into the **CAMERA** port, blue side facing the Ethernet/USB ports)
-- 2× infrared LED boards — screw onto the camera board's power holes. Each has a light sensor and turns on by itself in the dark. They are not controlled by code.
-- Optional: PIR sensor (VCC → 5V pin 2, GND → pin 6, OUT → GPIO17 pin 11)
+- Night-vision camera module 
+- 2× infrared LED boards — screw onto the camera board's power holes. They are not controlled by code.
+- PIR sensor
 
-> Night-vision ("NoIR") cameras have no IR filter, so daytime photos look pinkish. That's normal.
+> Night-vision ("NoIR") cameras have no IR filter, so daytime photos look pinkish.
 
-## 1. Backend (your laptop or VPS)
+## 1. Backend 
 
 Needs PHP 8.2+ and Composer.
-
-```bash
-bash setup-backend.sh
-```
-
 This installs Laravel, merges in this project's files, creates the SQLite database, links photo storage and generates a `DEVICE_KEY`. Copy that key; the Pi needs it.
 
 Set `APP_URL` in `backend/.env` to the address other devices use, so photo links work from your phone:
