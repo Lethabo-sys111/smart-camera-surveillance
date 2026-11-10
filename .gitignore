@@ -13,3 +13,4 @@ pi/config.ini
 __pycache__/
 
 .DS_Store
+frontend/src-backup/

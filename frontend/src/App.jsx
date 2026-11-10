@@ -1,13 +1,35 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from './api'
-import Header from './components/Header'
+import TopBar from './components/TopBar'
+import StatusPanel from './components/StatusPanel'
+import ActivityFeed from './components/ActivityFeed'
 import Gallery from './components/Gallery'
 import Lightbox from './components/Lightbox'
 import LiveFeed from './components/LiveFeed'
 import Toast from './components/Toast'
+import ConfirmDialog from './components/ConfirmDialog'
 
-const CAMERA_POLL_MS = 4000
+const CAMERA_POLL_MS = 3000
 const CAPTURES_POLL_MS = 5000
+
+// Photos taken within this many seconds of each other count as one event.
+const BURST_GAP_S = 10
+
+function toEvents(captures) {
+  const events = []
+  for (const c of captures) {
+    const t = new Date(c.captured_at).getTime()
+    const last = events[events.length - 1]
+    if (last && last.type === c.trigger && last.start - t < BURST_GAP_S * 1000) {
+      last.count += 1
+      last.start = t
+      last.thumbs.push(c)
+    } else {
+      events.push({ id: `c${c.id}`, type: c.trigger, at: c.captured_at, start: t, count: 1, thumbs: [c] })
+    }
+  }
+  return events
+}
 
 export default function App() {
   const [camera, setCamera] = useState(null)
@@ -20,25 +42,40 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [newIds, setNewIds] = useState(new Set())
 
+  const [sessionEvents, setSessionEvents] = useState([])
   const [openIndex, setOpenIndex] = useState(null)
   const [liveOpen, setLiveOpen] = useState(false)
+  const [confirmDisarm, setConfirmDisarm] = useState(false)
   const [toast, setToast] = useState(null)
   const [busy, setBusy] = useState({ arm: false, capture: false })
 
   const capturesRef = useRef(captures)
   capturesRef.current = captures
+  const prevArmed = useRef(null)
 
   const notify = useCallback((message, tone = 'info') => setToast({ message, tone, key: Date.now() }), [])
+
+  // Record arm/disarm changes, whether they came from this app, another phone or an NFC card.
+  const trackArmed = useCallback((cam) => {
+    if (!cam) return
+    if (prevArmed.current !== null && prevArmed.current !== cam.armed) {
+      const at = new Date().toISOString()
+      setSessionEvents((ev) => [{ id: `s${Date.now()}`, type: cam.armed ? 'armed' : 'disarmed', at, count: 1, thumbs: [] }, ...ev].slice(0, 30))
+    }
+    prevArmed.current = cam.armed
+  }, [])
 
   // ---- Camera status (polled) ----
   const loadCamera = useCallback(async () => {
     try {
-      setCamera(await api.getCamera())
+      const cam = await api.getCamera()
+      trackArmed(cam)
+      setCamera(cam)
       setCameraError(null)
     } catch (e) {
       setCameraError(e.message)
     }
-  }, [])
+  }, [trackArmed])
 
   useEffect(() => {
     loadCamera()
@@ -75,10 +112,11 @@ export default function App() {
             return [...fresh.filter((c) => !ids.has(c.id)), ...prev]
           })
           setNewIds((ids) => new Set([...ids, ...fresh.map((c) => c.id)]))
-          notify(`${fresh.length} new photo${fresh.length > 1 ? 's' : ''} captured`, 'alert')
+          const motion = fresh.some((c) => c.trigger === 'motion')
+          notify(motion ? `Motion detected · ${fresh.length} photo${fresh.length > 1 ? 's' : ''}` : 'New photo captured', motion ? 'alert' : 'info')
         }
         setLastPage(res.last_page)
-      } catch { /* status bar already shows connection problems */ }
+      } catch { /* the banner already shows connection problems */ }
     }, CAPTURES_POLL_MS)
     return () => clearInterval(t)
   }, [dateFilter, notify])
@@ -99,18 +137,24 @@ export default function App() {
   }
 
   // ---- Actions ----
-  const toggleArmed = async () => {
-    if (!camera) return
+  const setArmed = async (armed) => {
     setBusy((b) => ({ ...b, arm: true }))
     try {
-      const updated = await api.setArmed(!camera.armed)
+      const updated = await api.setArmed(armed)
+      trackArmed(updated)
       setCamera(updated)
-      notify(updated.armed ? 'Camera armed: motion will be photographed' : 'Camera disarmed')
+      notify(updated.armed ? 'System armed' : 'System disarmed', updated.armed ? 'alert' : 'good')
     } catch (e) {
       notify(e.message, 'error')
     } finally {
       setBusy((b) => ({ ...b, arm: false }))
     }
+  }
+
+  const toggleArmed = () => {
+    if (!camera) return
+    if (camera.armed) setConfirmDisarm(true)
+    else setArmed(true)
   }
 
   const takePhoto = async () => {
@@ -146,39 +190,61 @@ export default function App() {
     setOpenIndex(captures.findIndex((c) => c.id === id))
   }
 
+  const events = useMemo(() => {
+    const all = [...sessionEvents, ...toEvents(captures)]
+    all.sort((a, b) => new Date(b.at) - new Date(a.at))
+    return all.slice(0, 12)
+  }, [sessionEvents, captures])
+
+  const lastMotion = captures.find((c) => c.trigger === 'motion')
+  const alarmActive = !!(camera?.armed && lastMotion && Date.now() - new Date(lastMotion.captured_at).getTime() < 60_000)
+
   return (
-    <div className="app">
-      <Header
-        camera={camera}
-        error={cameraError}
-        busy={busy}
-        onToggleArmed={toggleArmed}
-        onTakePhoto={takePhoto}
-        onOpenLive={() => setLiveOpen(true)}
-      />
+    <div className={`app ${camera?.armed ? 'is-armed' : ''} ${alarmActive ? 'is-alarm' : ''}`}>
+      <TopBar camera={camera} error={cameraError} />
 
-      <main className="main">
-        <div className="toolbar">
-          <h2>Gallery</h2>
-          <div className="toolbar-right">
-            <label className="date-filter">
-              <span>Day</span>
-              <input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
-            </label>
-            {dateFilter && (
-              <button className="btn btn-ghost btn-sm" onClick={() => setDateFilter('')}>Show all</button>
-            )}
-          </div>
+      {cameraError && (
+        <div className="banner banner-bad" role="alert">
+          <strong>Server unreachable.</strong> Retrying every few seconds. Check the laptop is running the demo and this device is on the same Wi-Fi.
         </div>
+      )}
 
-        <Gallery
-          captures={captures}
-          loading={loading}
-          newIds={newIds}
-          onOpen={openCapture}
-          hasMore={page < lastPage}
-          onLoadMore={loadMore}
+      <main className="layout">
+        <StatusPanel
+          camera={camera}
+          alarm={alarmActive}
+          lastMotion={lastMotion}
+          busy={busy}
+          onToggleArmed={toggleArmed}
+          onTakePhoto={takePhoto}
+          onOpenLive={() => setLiveOpen(true)}
         />
+
+        <ActivityFeed events={events} onOpen={openCapture} />
+
+        <section className="card gallery-card">
+          <div className="card-head">
+            <h2>Gallery</h2>
+            <div className="toolbar-right">
+              <label className="date-filter">
+                <span>Day</span>
+                <input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
+              </label>
+              {dateFilter && (
+                <button className="btn btn-ghost btn-sm" onClick={() => setDateFilter('')}>Show all</button>
+              )}
+            </div>
+          </div>
+
+          <Gallery
+            captures={captures}
+            loading={loading}
+            newIds={newIds}
+            onOpen={openCapture}
+            hasMore={page < lastPage}
+            onLoadMore={loadMore}
+          />
+        </section>
       </main>
 
       {openIndex !== null && captures[openIndex] && (
@@ -192,6 +258,16 @@ export default function App() {
       )}
 
       {liveOpen && <LiveFeed camera={camera} onClose={() => setLiveOpen(false)} />}
+
+      {confirmDisarm && (
+        <ConfirmDialog
+          title="Disarm the system?"
+          body="Motion will no longer be photographed and the alarm will stop."
+          confirmLabel="Disarm"
+          onConfirm={() => { setConfirmDisarm(false); setArmed(false) }}
+          onCancel={() => setConfirmDisarm(false)}
+        />
+      )}
 
       {toast && <Toast key={toast.key} {...toast} onDone={() => setToast(null)} />}
     </div>

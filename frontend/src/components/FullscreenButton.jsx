@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 
 const supported = typeof document !== 'undefined' && !!document.documentElement.requestFullscreen
 
-/** Hides the browser's own bars so the app takes the whole screen. Not shown where unsupported (iPhone Safari). */
 export default function FullscreenButton({ className = 'btn' }) {
   const [active, setActive] = useState(!!document.fullscreenElement)
 

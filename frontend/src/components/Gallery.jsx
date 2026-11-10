@@ -9,12 +9,11 @@ export default function Gallery({ captures, loading, newIds, onOpen, hasMore, on
     return (
       <div className="empty">
         <p className="empty-title">No photos yet</p>
-        <p>When the camera is armed and sees motion, photos land here automatically.</p>
+        <p>When the system is armed and sees motion, photos land here automatically.</p>
       </div>
     )
   }
 
-  // Group by day, keeping newest-first order.
   const groups = []
   for (const c of captures) {
     const day = formatDay(c.captured_at)
@@ -26,21 +25,21 @@ export default function Gallery({ captures, loading, newIds, onOpen, hasMore, on
   return (
     <>
       {groups.map((g) => (
-        <section key={g.day} className="day-group">
-          <h3 className="day-heading">{g.day} <span>{g.items.length}</span></h3>
+        <div key={g.day} className="day-group">
+          <h3 className="day-heading">{g.day}<span>{g.items.length} photo{g.items.length > 1 ? 's' : ''}</span></h3>
           <div className="grid">
             {g.items.map((c) => (
-              <button key={c.id} className="tile" onClick={() => onOpen(c.id)}>
+              <button key={c.id} className={`tile ${newIds.has(c.id) ? 'is-new' : ''}`} onClick={() => onOpen(c.id)}>
                 <img src={c.url} alt={`Capture at ${formatTime(c.captured_at)}`} loading="lazy" />
                 <span className="tile-meta">
                   <span className="mono">{formatTime(c.captured_at)}</span>
-                  {c.trigger === 'manual' && <span className="tag">manual</span>}
+                  <span className={`tag tag-${c.trigger}`}>{c.trigger}</span>
                   {newIds.has(c.id) && <span className="tag tag-new">new</span>}
                 </span>
               </button>
             ))}
           </div>
-        </section>
+        </div>
       ))}
       {hasMore && (
         <div className="load-more">

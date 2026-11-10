@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { formatDay, formatSize, formatTime } from '../format'
+import Icon from './Icon'
 
 export default function Lightbox({ captures, index, onIndex, onClose, onDelete }) {
   const capture = captures[index]
@@ -20,24 +21,22 @@ export default function Lightbox({ captures, index, onIndex, onClose, onDelete }
     <div className="overlay" onClick={onClose} role="dialog" aria-modal="true">
       <div className="viewer" onClick={(e) => e.stopPropagation()}>
         <div className="viewer-bar">
-          <div>
-            <strong>{formatDay(capture.captured_at)}</strong>
-            <span className="mono muted"> · {formatTime(capture.captured_at)} · {formatSize(capture.size_bytes)} · {capture.trigger}</span>
+          <div className="viewer-title">
+            <strong>{formatDay(capture.captured_at)} · {formatTime(capture.captured_at)}</strong>
+            <span className="mono muted small">{capture.trigger} · {formatSize(capture.size_bytes)} · {index + 1} of {captures.length}</span>
           </div>
           <div className="viewer-actions">
-            <a className="btn btn-sm" href={capture.url} download target="_blank" rel="noreferrer">Download</a>
-            <button className="btn btn-sm btn-danger" onClick={() => onDelete(capture)}>Delete</button>
-            <button className="btn btn-sm btn-ghost" onClick={onClose} aria-label="Close">✕</button>
+            <a className="btn btn-sm" href={capture.url} download target="_blank" rel="noreferrer"><Icon name="download" size={15} /> <span className="hide-sm">Download</span></a>
+            <button className="btn btn-sm btn-danger" onClick={() => onDelete(capture)}><Icon name="trash" size={15} /> <span className="hide-sm">Delete</span></button>
+            <button className="btn btn-sm btn-ghost btn-icon" onClick={onClose} aria-label="Close"><Icon name="close" size={16} /></button>
           </div>
         </div>
 
         <div className="viewer-stage">
-          <button className="nav nav-prev" disabled={!hasPrev} onClick={() => onIndex(index - 1)} aria-label="Newer">‹</button>
+          <button className="nav nav-prev" disabled={!hasPrev} onClick={() => onIndex(index - 1)} aria-label="Newer"><Icon name="left" size={22} /></button>
           <img src={capture.url} alt="" />
-          <button className="nav nav-next" disabled={!hasNext} onClick={() => onIndex(index + 1)} aria-label="Older">›</button>
+          <button className="nav nav-next" disabled={!hasNext} onClick={() => onIndex(index + 1)} aria-label="Older"><Icon name="right" size={22} /></button>
         </div>
-
-        <p className="viewer-count mono muted">{index + 1} / {captures.length}</p>
       </div>
     </div>
   )
