@@ -9,7 +9,10 @@ the device or by pressing Disarm in a web dashboard. A 16x2 LCD on the device al
 the system is ARMED or DISARMED.
 
 ## Demo
-https://github.com/user-attachments/assets/e418063a-776f-469c-996c-59a18583224d
+
+https://github.com/user-attachments/assets/a4b91292-164d-42f0-aa34-88111d3327f1
+
+
 
 ---
 
