@@ -1,0 +1,2 @@
+backend/resources/views/*.blade.php linguist-vendored
+backend/public/** linguist-vendored
