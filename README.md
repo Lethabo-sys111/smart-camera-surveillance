@@ -8,6 +8,9 @@ siren keeps going until an authorised person disarms the system, either by tappi
 the device or by pressing Disarm in a web dashboard. A 16x2 LCD on the device always shows whether
 the system is ARMED or DISARMED.
 
+## Demo
+https://github.com/user-attachments/assets/e418063a-776f-469c-996c-59a18583224d
+
 ---
 
 ## 1. How the system works
